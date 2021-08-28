@@ -1,9 +1,7 @@
-import { help } from 'commander';
 import {
     Scene,
     PerspectiveCamera,
     WebGLRenderer,
-    MeshStandardMaterial,
     DirectionalLight,
     PCFSoftShadowMap,
     Object3D,
@@ -12,7 +10,7 @@ import {
     Matrix3
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module';
 
 const canvas = document.getElementById('scene');
@@ -22,14 +20,25 @@ const renderer = new WebGLRenderer({ canvas });
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = PCFSoftShadowMap;
 const controls = new OrbitControls(camera, renderer.domElement);
-const material = new MeshStandardMaterial({ color: 0x00ff00 });
-const loader = new OBJLoader();
+const loader = new GLTFLoader();
 
 const settings = {
-    x: 180,
-    y: 145,
+    x: 97,
+    y: 160,
     z: 252,
     depth: 0.5
+};
+
+const modelRotation = {
+    x: 0,
+    y: 0,
+    z: 0,
+};
+
+const cameraPosition = {
+    x: 1,
+    y: 5,
+    z: 17,
 };
 
 const gui = new GUI({ settings });
@@ -40,27 +49,43 @@ hotspotFolder.add(settings, 'z', 0, 360);
 hotspotFolder.add(settings, 'depth', -1, 1, 0.01);
 hotspotFolder.open();
 
+const modelFolder = gui.addFolder('Model');
+modelFolder.add(modelRotation, 'x', 0, Math.PI * 2, 0.01).onChange(() => globalObj.scene.rotation.set(modelRotation.x, modelRotation.y, modelRotation.z));
+modelFolder.add(modelRotation, 'y', 0, Math.PI * 2, 0.01).onChange(() => globalObj.scene.rotation.set(modelRotation.x, modelRotation.y, modelRotation.z));
+modelFolder.add(modelRotation, 'z', 0, Math.PI * 2, 0.01).onChange(() => globalObj.scene.rotation.set(modelRotation.x, modelRotation.y, modelRotation.z));
+modelFolder.open();
+
+const cameraFolder = gui.addFolder('Camera');
+cameraFolder.add(cameraPosition, 'x', 0, Math.PI * 10, 0.01).onChange(() => camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z));
+cameraFolder.add(cameraPosition, 'y', 0, Math.PI * 10, 0.01).onChange(() => camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z));
+cameraFolder.add(cameraPosition, 'z', 0, Math.PI * 10, 0.01).onChange(() => camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z));
+cameraFolder.open();
+
 
 renderer.setSize(window.innerWidth, window.innerHeight);
-camera.position.z = 5;
 controls.update();
 
+let globalObj;
+
 loader.load(
-    './teapot.obj',
+    '/assets/models/washing-machine/scene.gltf',
     obj => {
-        obj.traverse(node => {
-            if (node.isMesh) node.material = material;
-        });
-        obj.castShadow = true;
-        obj.receiveShadow = true;
-        scene.add(obj);
+        globalObj = obj;
+        // obj.traverse(node => {
+        //     if (node.isMesh) node.material = material;
+        // });
+        // obj.castShadow = true;
+        // obj.receiveShadow = true;
+        obj.scene.children[0].scale.set(5, 5, 5);
+        obj.scene.rotation.set(0, 1.69, 0);
+        scene.add(obj.scene);
         console.log('Added!');
     },
     xhr => console.log((xhr.loaded / xhr.total * 100) + '% loaded'),
     err => console.log('An error: ' + err.message)
 );
 
-const light = new DirectionalLight(0xffffff, 1, 100);
+const light = new DirectionalLight(0xffffff, 100, 100);
 light.position.set(0, 1, 0);
 light.castShadow = true;
 
@@ -71,9 +96,9 @@ light.shadow.camera.far = 500;
 
 scene.add(light);
 
-camera.position.z = 10;
-camera.position.y = 5;
-camera.position.x = 10;
+camera.position.x = cameraPosition.x;
+camera.position.y = cameraPosition.y;
+camera.position.z = cameraPosition.z;
 
 const lonHelper = new Object3D();
 const latHelper = new Object3D();
@@ -104,12 +129,12 @@ const line = new LeaderLine(
 
 const tempV = new Vector3();
 const cameraToPoint = new Vector3();
-const cameraPosition = new Vector3();
+const currentCameraPosition = new Vector3();
 const normalMatrix = new Matrix3();
 
 function updateHotspotPos() {
     normalMatrix.getNormalMatrix(camera.matrixWorldInverse);
-    camera.getWorldPosition(cameraPosition);
+    camera.getWorldPosition(currentCameraPosition);
 
     tempV.copy(hotspot.position);
     tempV.applyMatrix3(normalMatrix);
@@ -118,8 +143,6 @@ function updateHotspotPos() {
     cameraToPoint.applyMatrix4(camera.matrixWorldInverse).normalize();
 
     const dot = tempV.dot(cameraToPoint);
-
-    console.log({ dot, divided: dot / Math.PI / (settings.z / 180) });
 
     if ((dot / Math.PI) > settings.depth) {
         hotspot.elem.style.display = 'none';
@@ -142,7 +165,7 @@ function updateHotspotPos() {
     const y = (tempV.y * -.5 + .5) * canvas.clientHeight;
 
     //LeaderLine.pointAnchor(document.body, { x, y})
-    line.end = LeaderLine.areaAnchor({element: hotspot.elem, shape: 'circle', size: 3});
+    line.end = LeaderLine.areaAnchor({ element: hotspot.elem, shape: 'circle', size: 3 });
 
     hotspot.elem.style.transform = `translate(-50%, -50%) translate(${x}px,${y}px)`;
 

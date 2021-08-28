@@ -2,9 +2,8 @@
   "name": "kelvion",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
-    "start": "npm install && npx parcel index.html"
+    "start": "npm install && cp -R ./static/* ./dist/ && npx parcel index.html"
   },
   "author": "",
   "license": "ISC",
@@ -12,6 +11,10 @@
     "npm": "^7.21.1",
     "parcel": "^2.0.0-rc.0",
     "three": "^0.132.0"
+  },
+  "staticFiles": {
+    "staticPath": "static",
+    "watcherGlob": "**"
   },
   "devDependencies": {
     "@types/dat.gui": "^0.7.7"

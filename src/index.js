@@ -8,7 +8,8 @@ import {
     PCFSoftShadowMap,
     Object3D,
     MathUtils,
-    Vector3
+    Vector3,
+    Matrix3
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
@@ -27,13 +28,16 @@ const loader = new OBJLoader();
 const settings = {
     x: 180,
     y: 145,
-    z: 252
+    z: 252,
+    depth: 0.5
 };
+
 const gui = new GUI({ settings });
 const hotspotFolder = gui.addFolder('Hotspot');
 hotspotFolder.add(settings, 'x', 0, 360);
 hotspotFolder.add(settings, 'y', 0, 360);
 hotspotFolder.add(settings, 'z', 0, 360);
+hotspotFolder.add(settings, 'depth', -1, 1, 0.01);
 hotspotFolder.open();
 
 
@@ -81,27 +85,55 @@ latHelper.add(positionHelper);
 const lonFudge = Math.PI * 1.5;
 const latFudge = Math.PI;
 
-const position = new Vector3();
-
 const hotspot = {
     elem: document.getElementById('hotspot'),
-    position
+    position: new Vector3()
 };
-
-const tempV = new Vector3();
-
 
 const line = new LeaderLine(
     document.getElementById('legend').getElementsByClassName('legendItem')[0],
-    LeaderLine.pointAnchor(document.body, { x: 1, y: 1 })
+    LeaderLine.pointAnchor(document.body, { x: 1, y: 1 }),
+    {
+        path: 'grid',
+        color: 'rgba(255, 237, 0, 1)',
+        size: 1,
+        endPlug: 'behind',
+        endPlugSize: 10
+    }
 );
 
+const tempV = new Vector3();
+const cameraToPoint = new Vector3();
+const cameraPosition = new Vector3();
+const normalMatrix = new Matrix3();
+
 function updateHotspotPos() {
+    normalMatrix.getNormalMatrix(camera.matrixWorldInverse);
+    camera.getWorldPosition(cameraPosition);
+
+    tempV.copy(hotspot.position);
+    tempV.applyMatrix3(normalMatrix);
+
+    cameraToPoint.copy(hotspot.position);
+    cameraToPoint.applyMatrix4(camera.matrixWorldInverse).normalize();
+
+    const dot = tempV.dot(cameraToPoint);
+
+    console.log({ dot, divided: dot / Math.PI / (settings.z / 180) });
+
+    if ((dot / Math.PI) > settings.depth) {
+        hotspot.elem.style.display = 'none';
+        line.hide();
+        return;
+    }
+    hotspot.elem.style.display = '';
+    line.show();
+
     lonHelper.rotation.y = MathUtils.degToRad(settings.x) + lonFudge;
     latHelper.rotation.x = MathUtils.degToRad(settings.y) + latFudge;
     positionHelper.position.z = MathUtils.degToRad(settings.z);
     positionHelper.updateWorldMatrix(true, false);
-    positionHelper.getWorldPosition(position);
+    positionHelper.getWorldPosition(hotspot.position);
 
     tempV.copy(hotspot.position);
     tempV.project(camera);
@@ -109,7 +141,8 @@ function updateHotspotPos() {
     const x = (tempV.x * .5 + .5) * canvas.clientWidth;
     const y = (tempV.y * -.5 + .5) * canvas.clientHeight;
 
-    line.end = LeaderLine.pointAnchor(document.body, { x, y })
+    //LeaderLine.pointAnchor(document.body, { x, y})
+    line.end = LeaderLine.areaAnchor({element: hotspot.elem, shape: 'circle', size: 3});
 
     hotspot.elem.style.transform = `translate(-50%, -50%) translate(${x}px,${y}px)`;
 

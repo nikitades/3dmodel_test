@@ -9,7 +9,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "npm": "^7.21.1",
     "parcel": "^2.0.0-rc.0",
     "three": "^0.132.0"
+  },
+  "devDependencies": {
+    "@types/dat.gui": "^0.7.7"
   }
 }

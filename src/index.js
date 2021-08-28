@@ -25,7 +25,7 @@ const loader = new GLTFLoader();
 const settings = {
     x: 97,
     y: 160,
-    z: 252,
+    z: 233,
     depth: 0.5
 };
 

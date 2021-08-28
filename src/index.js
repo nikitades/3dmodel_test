@@ -57,13 +57,13 @@ loader.load(
 );
 
 const light = new DirectionalLight(0xffffff, 1, 100);
-light.position.set(0, 1, 0); //default; light shining from top
-light.castShadow = true; // default false
+light.position.set(0, 1, 0);
+light.castShadow = true;
 
-light.shadow.mapSize.width = 512; // default
-light.shadow.mapSize.height = 512; // default
-light.shadow.camera.near = 0.5; // default
-light.shadow.camera.far = 500; // default
+light.shadow.mapSize.width = 512;
+light.shadow.mapSize.height = 512;
+light.shadow.camera.near = 0.5;
+light.shadow.camera.far = 500;
 
 scene.add(light);
 
@@ -106,16 +106,13 @@ function updateHotspotPos() {
     tempV.copy(hotspot.position);
     tempV.project(camera);
 
-    // convert the normalized position to CSS coordinates
     const x = (tempV.x * .5 + .5) * canvas.clientWidth;
     const y = (tempV.y * -.5 + .5) * canvas.clientHeight;
 
     line.end = LeaderLine.pointAnchor(document.body, { x, y })
 
-    // move the elem to that position
     hotspot.elem.style.transform = `translate(-50%, -50%) translate(${x}px,${y}px)`;
 
-    // set the zIndex for sorting
     hotspot.elem.style.zIndex = (-tempV.z * .5 + .5) * 100000 | 0;
 }
 
